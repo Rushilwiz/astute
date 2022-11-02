@@ -1,0 +1,63 @@
+<app-nav-bar></app-nav-bar>
+<div>
+  <div class="container">
+    <!--welcome message and search bar-->
+    <div class="row top-buffer align-items-center">
+      <div class="col-lg-8">
+        <h1 class="display-4" *ngIf="currentUser">
+          Welcome to the Astute Internal System, {{currentUser}}!
+        </h1>
+      </div>
+    </div>
+
+    <!--applications-->
+    <div>
+      <div class="row sep-buffer">
+        <div class="col-12">
+          <h3>
+            Applications
+          </h3>
+        </div>
+      </div>
+      <div class="row">
+        <app-app-box class="m-3" [color]="'#00bcd4'" [name]="'Customer'" [symbol]="'supervised_user_circle'" routerLink="/customer">
+          <h6 class="card-subtitle mb-2 text-muted">Add or edit customers!</h6>
+          <!--<i class="material-icons text-info">info</i> -->
+        </app-app-box>
+        <app-app-box class="m-3" [color]="'#f44336'" [name]="'Sales Order'" [symbol]="'assignment'" routerLink="/sales-order">
+          <h6 class="card-subtitle mb-2 text-muted">Add sales orders or make change orders!</h6>
+          <!--<i class="material-icons text-info">info</i> Medical Records Application-->
+        </app-app-box>
+        <app-app-box class="m-3" [color]="'#4fd581'" [name]="'Invoice'" [symbol]="'view_headline'" routerLink="/invoice">
+          <h6 class="card-subtitle mb-2 text-muted">Interact with invoices!</h6>
+          <!--<i class="material-icons text-danger">info</i> Not yet implemented-->
+        </app-app-box>
+        <app-app-box class="m-3" [color]="'#a5e076'" [name]="'Invoice Payment'" [symbol]="'attach_money'" routerLink="/invoice-payment">
+          <h6 class="card-subtitle mb-2 text-muted">Enter payments received!</h6>
+          <!--<i class="material-icons text-danger">info</i> Not yet implemented-->
+        </app-app-box>
+        <app-app-box class="m-3" [color]="'#feaa6a'" [name]="'Settings'" [symbol]="'settings'" routerLink="/settings">
+          <h6 class="card-subtitle mb-2 text-muted">Change your settings!</h6>
+          <!--<i class="material-icons text-danger">info</i> Not yet implemented-->
+        </app-app-box>
+      </div>
+    </div>
+
+    <!--Some Extra Info-->
+    <div>
+      <div class="row sep-buffer">
+        <div class="col-12">
+          <h3>
+            Extra info section
+          </h3>
+        </div>
+      </div>
+      <div class="row top-buffer justify-content-start">
+        <h5 class="app-buffer">
+          Some sort of info here, maybe about recent invoices, or upcoming payment due dates.<br>
+          Maybe something for each users tasks...
+        </h5>
+      </div>
+    </div>
+  </div>
+</div>

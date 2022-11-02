@@ -1,0 +1,30 @@
+project number should be mandatory?
+Contract amount should be formatted with $ and 2 decimals .00 by default
+Create Invoice - Auto generated Inovice number should be editable
+Meeting 8/23
+X. Contract amt - can be derived
+X. Rate 
+X. $ in fee
+X. wrap text in desc column - all columns
+5. - and x instead of x in modal windows (also the minimize feature)
+6. Out of pocket in drop-down of tasks, once picked, all will be editable
+7. only submitted can  be voided
+8. Draft can be deleted
+9. Voided should be out from all calculations
+10. invoice_num should be unique and will be only generated when you hit submitted, will not be primary key any more, add new primary key
+11. inv no - (first 3 letters of customer id ) -
+12. SO - new column - sequence number
+13. Change order design should be the same as sales order
+14. Change order screens need to be done for further discussion
+15. invoice payment
+16. Login
+17. Printing
+18. Deployment
+
+Reports - 
+1. Order book 
+by year, 
+ordered by date 
+sum at the end
+2. Order Backlog - balance to be invoiced 
+3. Receivables - invoices not paid

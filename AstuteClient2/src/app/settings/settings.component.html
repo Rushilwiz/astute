@@ -1,0 +1,75 @@
+<app-nav-bar></app-nav-bar>
+<div class="container p-2">
+  <div class="row top-buffer align-items-center">
+    <div class="col-lg-12">
+      <h1 class="display-4">Settings</h1>
+      <hr>
+
+      <h3 class="display-5">Configuration</h3>
+      <hr>
+      <div class="container-fluid m-1">
+        <div class="row m-1 align-content-center w-100">
+          <button class="btn btn-info" style="width: 100%" (click)="open(serviceTypes)">Edit Service Types</button>
+        </div>
+        <div class="row m-1 p-1 align-content-center w-100">
+          <div class="col-4">
+            <button class="btn btn-primary w-100" [disabled]="true">Export Customers</button>
+          </div>
+          <div class="col-4">
+            <button class="btn btn-primary w-100" style="width: 100%" [disabled]="true">Export Sales Orders</button>
+          </div>
+          <div class="col-4">
+            <button class="btn btn-info w-100" style="width: 100%" [disabled]="true">Export Invoices</button>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="display-5">Configuration</h3>
+      <hr>
+      <div class="container-fluid m-1">
+        <div class="row m-1 align-content-center w-100">
+          <div class="col-12 m-1">
+            <div class="row p-1">
+              <button class="btn btn-primary" style="width: 100%" [disabled]="true">Edit Users</button>
+            </div>
+            <div class="row p-1">
+              <button class="btn btn-warning" style="width: 100%" [disabled]="true">Change Password</button>
+            </div>
+            <div class="row p-1">
+              <button class="btn btn-danger" style="width: 100%" (click)="logout()">Logout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-modal-form [title]="'Service Types'" #serviceTypes>
+  <div class="modal-body">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12 align-items-end">
+          <ag-grid-angular
+                  style="height: 350px;"
+                  class="ag-theme-balham"
+                  [enableColResize]="true"
+                  [enableSorting]="true"
+                  [enableFilter]="true"
+                  [rowData]="serviceTypeData | async"
+                  [columnDefs]="columnDefs"
+                  (cellEditingStopped)="updateServiceTypeRow($event)"
+                  (gridReady)="onGridReady($event)"
+                  (rowDataChanged)="resizeColumns($event)"
+                  rowSelection="single"
+          ></ag-grid-angular>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-primary" type="button" (click)="addEmptyServiceTypes()">Add</button>
+    <button class="btn btn-outline-danger" (click)="close(serviceTypes)">Exit</button>
+  </div>
+</app-modal-form>

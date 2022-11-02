@@ -1,0 +1,370 @@
+<app-nav-bar [customerActive]="true"></app-nav-bar>
+<div *ngIf="loggedIn">
+  <h1 align="center">Customers</h1>
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <ag-grid-angular
+                style="height: 500px;"
+                class="ag-theme-balham"
+                [enableColResize]="true"
+                [enableSorting]="true"
+                [enableFilter]="true"
+                [rowData]="rowData | async"
+                [columnDefs]="columnDefs"
+                [frameworkComponents]="frameworkComponents"
+                (cellEditingStopped)="updateRow($event)"
+                (gridReady)="onGridReady($event)"
+                (rowClicked)="setSelectedRow($event)"
+                (rowDataChanged)="resizeColumns($event)"
+                rowSelection="single"
+                rowDeselection="true"
+        ></ag-grid-angular>
+      </div>
+    </div>
+    <div class="row justify-content-center mt-2">
+      <div class="col">
+        <div class="btn-group w-100">
+          <button class="btn btn-success" style="width: 100%" (click)="open(new)">Add Customer</button>
+          <button class="btn btn-info" style="width: 100%" (click)="open(edit)" [disabled]="!selected">Edit Customer</button>
+          <button class="btn btn-primary" style="width: 100%" (click)="open(contacts)" [disabled]="!selected">Contacts</button>
+          <button class="btn btn-danger" style="width: 100%" (click)="deleteCustomer(selected.customerId)" [disabled]="!selected">Delete Customer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--MODAL: new customer-->
+  <app-modal-form [title]="'New Customer'" #new>
+    <div class="modal-body">
+      <table class="table table-borderless table-sm">
+        <tbody>
+        <tr>
+          <td style="width: 10%">
+            <span class="input-group-text">ID*</span>
+          </td>
+          <td colspan="7">
+            <input type="text" class="form-control" [textMask]="{mask: idMask, guide: false}" placeholder="johndoe" #inId>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="width: 10%">
+            <span class="input-group-text">Name*</span>
+          </td>
+          <td colspan="7">
+            <input type="text" class="form-control" placeholder="John Doe" #inName>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="width: 10%">
+            <span class="input-group-text">Bill To Dept*</span>
+          </td>
+          <td colspan="7">
+            <input type="text" class="form-control" placeholder="Billing" #inBillToDept>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="width: 10%">
+            <span class="input-group-text">Address 1*</span>
+          </td>
+          <td colspan="7">
+            <input type="text" class="form-control" placeholder="13254 John Doe Rd." #inAdd1>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="width: 1%">
+            <span class="input-group-text">Address 2</span>
+          </td>
+          <td colspan="7">
+            <input type="text" class="form-control" placeholder="Apt #, Unit, etc..." [value]="''" #inAdd2>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="width: 1%">
+            <span class="input-group-text">City*</span>
+          </td>
+          <td>
+            <input type="text" class="form-control" placeholder="New York City" #inCity>
+          </td>
+
+          <td style="width: 1%">
+            <span class="input-group-text">State*</span>
+          </td>
+          <td>
+            <select class="custom-select" #inState>
+              <option selected>Choose...</option>
+              <option *ngFor="let state of states" [value]="state">{{state}}</option>
+            </select>
+          </td>
+
+
+          <td style="width: 1%">
+            <span class="input-group-text">ZIP*(+4)</span>
+          </td>
+          <td style="width: 25%">
+            <div class="input-group">
+              <input type="number" class="form-control" placeholder="12345" #inZIP>
+              <input type="number" class="form-control" placeholder="(+4)" #inZIP4>
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="width: 1%">
+            <span class="input-group-text">Email*</span>
+          </td>
+          <td colspan="7">
+            <input type="email" class="form-control" placeholder="john@doe.com" #inEmail>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="width: 1%">
+            <span class="input-group-text">Phone*</span>
+          </td>
+          <td colspan="7">
+            <input type="tel" class="form-control" placeholder="(123) 456-7890" [textMask]="{mask: usPhoneMask, guide: false}" #inPhone>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="width: 1%">
+            <span class="input-group-text">Ext</span>
+          </td>
+          <td colspan="3">
+            <input type="tel" class="form-control" placeholder="123456" #inPhExt [value]="">
+          </td>
+        </tr>
+
+        <tr>
+          <td style="width: 1%">
+            <span class="input-group-text">Fax</span>
+          </td>
+          <td colspan="7">
+            <input type="tel" class="form-control" placeholder="(123) 456-7890" [value]="''" [textMask]="{mask: usPhoneMask, guide: false}" #inFax>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-success" type="button"
+              [disabled]="!(inId.value && inName.value && inBillToDept.value && inAdd1.value && inCity.value && inState.value && inZIP.value && inEmail.value && inPhone.value)"
+              (click)="addCustomer(inId.value, inName.value, inBillToDept.value, inAdd1.value, inAdd2.value, inCity.value, inState.value, inZIP.value, inZIP4.value, inEmail.value, inPhone.value, inPhExt.value, inFax.value, new)">
+        Add
+      </button>
+      <button type="button" class="btn btn-danger" (click)="close(new)">Cancel</button>
+    </div>
+  </app-modal-form>
+
+  <!--MODAL: edit customer-->
+  <app-modal-form [title]="'Editing'" #edit>
+    <div *ngIf="selected">
+      <div class="modal-body">
+        <table class="table table-borderless table-sm">
+          <tbody>
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Name*</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" #inName placeholder="John Doe" [value]="selected.customerName">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Bill To Dept*</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" placeholder="Billing" #inBillToDept [value]="selected.billToDept">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Address 1*</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" placeholder="13254 John Doe Rd." #inAdd1 [value]="selected.add1">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 1%">
+              <span class="input-group-text">Address 2</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" placeholder="Apt#, Unit, etc." #inAdd2 [value]="selected.add2">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 1%">
+              <span class="input-group-text">City*</span>
+            </td>
+            <td>
+              <input type="text" class="form-control" placeholder="New York City" #inCity [value]="selected.city">
+            </td>
+
+            <td style="width: 1%">
+              <span class="input-group-text">State*</span>
+            </td>
+            <td>
+              <select class="custom-select" #inState [value]="selected.state">
+                <option selected>Choose...</option>
+                <option *ngFor="let state of states" [value]="state">{{state}}</option>
+              </select>
+            </td>
+
+
+            <td style="width: 1%">
+              <span class="input-group-text">ZIP*(+4)</span>
+            </td>
+            <td style="width: 25%">
+              <div class="input-group">
+                <input type="number" class="form-control" placeholder="12345" #inZIP [value]="selected.zip">
+                <input type="number" class="form-control" placeholder="(+4)" #inZIP4 [value]="selected.ziplast4">
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 1%">
+              <span class="input-group-text">Email*</span>
+            </td>
+            <td colspan="7">
+              <input type="email" class="form-control" placeholder="john@doe.com" #inEmail [value]="selected.email">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 1%">
+              <span class="input-group-text">Phone*</span>
+            </td>
+            <td colspan="3">
+              <input type="tel" class="form-control" placeholder="(123) 456-7890" [textMask]="{mask: usPhoneMask, guide: false}" #inPhone [value]="selected.phone">
+            </td>
+            <td style="width: 1%">
+              <span class="input-group-text">Ext*</span>
+            </td>
+            <td colspan="2">
+              <input type="tel" class="form-control" placeholder="123456" #inPhExt [value]="selected.phExt">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 1%">
+              <span class="input-group-text">Fax</span>
+            </td>
+            <td colspan="7">
+              <input type="tel" class="form-control" placeholder="(123) 456-7890" [textMask]="{mask: usPhoneMask, guide: false}" #inFax [value]="selected.fax">
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-warning" type="button"
+                [disabled]="!(inName.value && inBillToDept.value && inAdd1.value && inCity.value && inState.value && inZIP.value && inEmail.value && inPhone.value)"
+                (click)="editCustomer(selected.customerId ,inName.value, inBillToDept.value, inAdd1.value, inAdd2.value, inCity.value, inState.value, inZIP.value, inZIP4.value, inEmail.value, inPhone.value, inPhExt.value, inFax.value, edit)">
+          Update
+        </button>
+        <button type="button" class="btn btn-danger" (click)="close(edit)">Cancel</button>
+      </div>
+    </div>
+    <div *ngIf="!selected">
+      <div class="modal-body">
+        Choose a Customer First!
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-warning" type="button"
+                [disabled]="true">
+          Update
+        </button>
+        <button type="button" class="btn btn-danger" (click)="close(edit)">Cancel</button>
+      </div>
+    </div>
+  </app-modal-form>
+
+  <!--MODAL: customer contacts-->
+  <app-modal-form [title]="'Customer Contacts'" #contacts>
+    <div *ngIf="selected">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-12 align-items-end">
+            <ag-grid-angular
+                    style="height: 500px;"
+                    class="ag-theme-balham"
+                    [enableColResize]="true"
+                    [enableSorting]="true"
+                    [enableFilter]="true"
+                    [rowData]="contactsData | async"
+                    [columnDefs]="contactsColDef"
+                    [frameworkComponents]="frameworkComponents"
+                    (cellEditingStopped)="updateContactRow($event)"
+                    (gridReady)="onContactGridReady($event)"
+                    (rowDataChanged)="resizeColumns($event)"
+                    rowSelection="single"
+                    rowDeselection="true"
+            ></ag-grid-angular>
+          </div>
+        </div>
+        <div class="row justify-content-center mt-2">
+          <div class="col">
+            <div class="input-group mb-3 mt-2">
+              <input type="text" class="form-control input-group-sm" placeholder="Name" #customerContactName>
+              <div class="input-group-append w-25">
+                <button class="btn btn-success w-50 input-group-sm" type="button"
+                        (click)="createEmptyContact(customerContactName.value); customerContactName.value = '';" [disabled]="!customerContactName.value">
+                  Add
+                </button>
+                <button class="btn btn-danger w-50 input-group-sm" type="button"
+                        (click)="deleteContact()">
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--<div class="modal-footer">-->
+        <!--<button type="button" class="btn btn-info" (click)="close(contacts)">Exit</button>-->
+      <!--</div>-->
+    </div>
+    <div *ngIf="!selected">
+      <div class="modal-body">
+        Choose a Customer First!
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-info" (click)="close(contacts)">Exit</button>
+      </div>
+    </div>
+  </app-modal-form>
+</div>
+
+<div *ngIf="!loggedIn">
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-12">
+        <div class="jumbotron">
+          <h1 class="display-4">Please Log In First!</h1>
+          <p class="lead">Once you do, you will be able to create new customers and edit existing ones to your hearts content!</p>
+          <p class="lead">
+            <a class="btn btn-success btn-lg" href="#" role="button">Log In</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,745 @@
+<app-nav-bar [invoiceActive]="true"></app-nav-bar>
+<div *ngIf="loggedIn">
+    <h1 align="center">Invoices</h1>
+
+    <div class="container-fluid">
+    <!--Table-->
+    <div class="row">
+        <div class="col-12">
+            <ag-grid-angular
+                    style="height: 500px;"
+                    class="ag-theme-balham"
+                    [gridOptions]="gridOptions"
+                    [enableSorting]="true"
+                    [enableFilter]="true"
+                    [rowData]="source"
+                    [columnDefs]="columnDefs"
+                    [frameworkComponents]="frameworkComponents"
+                    (cellEditingStopped)="updateRow($event)"
+                    (gridReady)="onGridReady($event)"
+                    (rowDataChanged)="resizeColumns($event)"
+                    (rowClicked)="setSelectedRow($event)"
+                    rowSelection="single"
+            ></ag-grid-angular>
+        </div>
+    </div>
+
+    <!--Buttons-->
+    <div class="row justify-content-center mt-2">
+        <div class="col">
+            <div class="btn-group w-100">
+                <button class="btn btn-success" style="width: 100%" (click)="open(new)">Add</button>
+                <button class="btn btn-info" style="width: 100%" (click)="open(edit)" [disabled]="!chosenInv || chosenInv.invoiceStatus !== 1">Edit</button>
+                <button class="btn btn-secondary" style="width: 100%" (click)="open(details)" [disabled]="!chosenInv">Details</button>
+                <button class="btn btn-primary" style="width: 100%" (click)="submitInvoice(chosenInv.invoiceNumber)" [disabled]="!(chosenInv && chosenInv.invoiceStatus === 1)">Submit</button>
+                <button class="btn btn-warning" style="width: 100%" (click)="voidInvoice(chosenInv.invoiceNumber)" [disabled]="!(chosenInv && chosenInv.invoiceStatus === 2)">Void</button>
+                <button class="btn btn-danger" style="width: 100%" (click)="deleteInvoice(chosenInv.invoiceNumber)" [disabled]="!(chosenInv && chosenInv.invoiceStatus === 1)">Delete</button>
+                <button class="btn btn-light" style="width: 100%" (click)="printInvoice()" [disabled]="!(chosenInv)">Print</button>
+            </div>
+        </div>
+        <!--<div class="col">-->
+            <!--<button class="btn btn-success" style="width: 100%" (click)="open(new)">Add</button>-->
+        <!--</div>-->
+        <!--<div class="col">-->
+            <!--<button class="btn btn-info" style="width: 100%" (click)="open(edit)" [disabled]="!chosenInv">Edit</button>-->
+        <!--</div>-->
+        <!--<div class="col">-->
+            <!--<button class="btn btn-secondary" style="width: 100%" (click)="open(details)" [disabled]="!chosenInv">Details</button>-->
+        <!--</div>-->
+        <!--<div class="col">-->
+            <!--<button class="btn btn-primary" style="width: 100%" (click)="submitInvoice(chosenInv.invoiceNumber)" [disabled]="!(chosenInv && chosenInv.invoiceStatus === 1)">Submit</button>-->
+        <!--</div>-->
+        <!--<div class="col">-->
+            <!--<button class="btn btn-danger" style="width: 100%" (click)="deleteInvoice(chosenInv.invoiceNumber)" [disabled]="!(chosenInv && chosenInv.invoiceStatus === 1)">Delete</button>-->
+        <!--</div>-->
+        <!--<div class="col">-->
+            <!--<button class="btn btn-warning" style="width: 100%" (click)="voidInvoice(chosenInv.invoiceNumber)" [disabled]="!(chosenInv && chosenInv.invoiceStatus === 2)">Void</button>-->
+        <!--</div>-->
+        <!--<div class="col">-->
+            <!--<button class="btn btn-light" style="width: 100%" (click)="printInvoice()" [disabled]="!(chosenInv)">Print</button>-->
+        <!--</div>-->
+    </div>
+</div>
+
+    <!--MODAL: edit Invoice-->
+    <app-modal-form [title]="'Edit Invoice'" #edit>
+        <!--General-->
+        <div class="modal-body" *ngIf="chosenInv">
+            <p class="h4 text-right">General</p>
+            <hr>
+            <table class="table table-borderless table-sm">
+                <tbody>
+                <tr>
+                    <td style="width: 1%">
+                        <span class="input-group-text">Customer</span>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" [value]=chosenInv.customerId disabled>
+                        <!--<select class="custom-select" (change)="customerDropdownChange(chosenInv.customerId)"-->
+                        <!--#test>-->
+                        <!--[value]="chosenInv.customerId"-->
+                        <!--<option [value]="-1">Choose Customer...</option>-->
+                        <!--<option *ngFor="let customer of customers; let i = index;" [value]="i">{{customer.customerName}}-->
+                        <!--</option>-->
+                        <!--</select>-->
+                    </td>
+                    <td style="width: 5%"></td>
+                    <td style="width: 10%">
+                        <span class="input-group-text">SO Number*</span>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" [value]="chosenInv.poNum" #poNumIn disabled>
+                        <!--<select class="custom-select" (change)="poDropdownChange(poNumIn.value)"-->
+                        <!--[value]="chosenInv.poNum" #poNumIn disabled>-->
+                        <!--<option>Choose Sales Order...</option>-->
+                        <!--<option *ngFor="let po of correspondingPos;" [value]="po.ponum">{{po.ponum}}</option>-->
+                        <!--</select>-->
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p *ngIf="chosenInv.customerId" class="p-0 m-0 mt-2">
+                            <!--To, {{correspondingCustomer[0].billToDept}}-->
+                        </p>
+                    </td>
+                    <td></td>
+                    <td>
+                        <span class="input-group-text">Invoice Number*</span>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" [value]="chosenInv.invoiceNumber" #inNumIn disabled>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p *ngIf="chosenInv.customerId" class="p-0 m-0 mt-2">
+                            <!--{{correspondingCustomer[0].add1}} {{correspondingCustomer[0].add2}}-->
+                        </p>
+                    </td>
+                    <td></td>
+                    <td>
+                        <span class="input-group-text">Change Order Num</span>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" [value]="chosenInv.changeOrderNum" #coNumIn>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p *ngIf="chosenInv.customerId" class="p-0 m-0 mt-2">
+                            <!--{{correspondingCustomer[0].city}} {{correspondingCustomer[0].state}} {{correspondingCustomer[0].zip}}{{(correspondingCustomer[0].ziplast4 == 0) ? '':'-' + correspondingCustomer[0].ziplast4}}-->
+                        </p>
+                    </td>
+                    <td></td>
+                    <td>
+                        <span class="input-group-text">Payment Status*</span>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" [value]=chosenInv.pmtStatusDesc disabled>
+                        <!--<select class="custom-select" [value]="chosenInv.pmtStatus" #pmtStatusIn disabled>-->
+                        <!--<option value="Outstanding">"Outstanding"</option>-->
+                        <!--<option value="Paid">"Paid"</option>-->
+                        <!--</select>-->
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <!--<div class="input-group mb-3">-->
+            <!--<div class="input-group-prepend">-->
+            <!--<span class="input-group-text">Invoice Number*</span>-->
+            <!--</div>-->
+            <!--<input type="text" class="form-control" #inNumIn [value]="chosenInv.invoiceNumber">-->
+            <!--<div class="input-group-prepend">-->
+            <!--<span class="input-group-text">PO Number*</span>-->
+            <!--</div>-->
+            <!--<input type="text" class="form-control" [disabled]="true" #poNumIn [value]="chosenInv.poNum">-->
+            <!--<div class="input-group-prepend">-->
+            <!--<span class="input-group-text">Change Order Num</span>-->
+            <!--</div>-->
+            <!--<input type="text" class="form-control" #coNumIn [value]="chosenInv.changeOrderNum">-->
+            <!--</div>-->
+
+            <!--<div class="input-group mb-3">-->
+            <!--<div class="input-group-prepend">-->
+            <!--<span class="input-group-text">Payment Status*</span>-->
+            <!--</div>-->
+            <!--<select class="custom-select" [value]="chosenInv.pmtStatus" #pmtStatusIn>-->
+            <!--<option value=0>Outstanding</option>-->
+            <!--<option value=1>Paid</option>-->
+            <!--</select>-->
+            <!--</div>-->
+        </div>
+
+        <!--Detials-->
+        <!--<div class="modal-body" *ngIf="chosenInv">-->
+            <!--<p class="h4 text-right">Detail</p>-->
+
+            <!--<table class="table">-->
+                <!--<thead>-->
+                <!--<tr>-->
+                    <!--<th scope="col" style="width: 50px">#</th>-->
+                    <!--<th scope="col">Description</th>-->
+                    <!--<th scope="col" style="width: 150px">Rate Type</th>-->
+                    <!--<th scope="col" style="width: 100px">Rate</th>-->
+                    <!--<th scope="col" style="width: 100px">Quantity</th>-->
+                <!--</tr>-->
+                <!--</thead>-->
+                <!--&lt;!&ndash;<tbody>&ndash;&gt;-->
+                <!--<tbody *ngFor="let inDet of selectedInDetails; let i = index">-->
+                <!--<tr class="p-0 m-0">-->
+                    <!--&lt;!&ndash;INV Detail Items: invoiceNum, lineItemNum, poLineItemNum, serviceTypeId, desc, qty, fee&ndash;&gt;-->
+                    <!--<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="inDet.lineItemNum" disabled>-->
+                    <!--</td>-->
+                    <!--<td class="p-0 m-0"><textarea style="height: 36px" class="form-control text cell" [value]="inDet.desc"-->
+                                                  <!--(change)="onSelectedCellChange(i, 'desc', desc.value)" #desc [disabled]="chosenInv.invoiceStatus !== 1"></textarea>-->
+                        <!--&lt;!&ndash;<input type="text" class="form-control cell" [value]="inDet.desc"&ndash;&gt;-->
+                        <!--&lt;!&ndash;(change)="onSelectedCellChange(i, 'desc', desc.value)" #desc>&ndash;&gt;-->
+                    <!--</td>-->
+                    <!--<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="feeTypes[inDet.feeTypeId - 1]"-->
+                                               <!--disabled></td>-->
+                    <!--<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="inDet.fee | currency" #fee [disabled]="chosenInv.invoiceStatus !== 1"-->
+                                               <!--(change)="onSelectedCellChange(i, 'fee', fee.value.substr(1)); updateSelectedBillAmt()">-->
+                    <!--</td>-->
+                    <!--<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="inDet.qty"-->
+                                               <!--[step]="inDet.remainingQty / 100"-->
+                                               <!--(change)="onSelectedCellChange(i, 'qty', qty.value); updateSelectedBillAmt()" #qty [disabled]="chosenInv.invoiceStatus !== 1">-->
+                    <!--</td>-->
+                <!--</tr>-->
+                <!--<tr class="p-0 m-0" *ngIf="inDet.poLineItemNum != -1">-->
+                    <!--<th class="align-content-center">-->
+                        <!--<p>{{getPerc(qty.value, inDet.remainingQty)}}%</p>-->
+                    <!--</th>-->
+                    <!--<td colspan="4">-->
+                        <!--<div class="progress" style="height: 25px;">-->
+                            <!--<div class="progress-bar bg-success" role="progressbar"-->
+                                 <!--[ngStyle]="{'width': getPerc(qty.value, inDet.remainingQty) + '%'}">-->
+                                <!--{{qty.value}}-->
+                            <!--</div>-->
+                            <!--<div class="progress-bar bg-danger" role="progressbar"-->
+                                 <!--[ngStyle]="{'width': (100 - getPerc(qty.value, inDet.remainingQty)) + '%'}">-->
+                                <!--{{inDet.remainingQty - (qty.value)}}-->
+                            <!--</div>-->
+                        <!--</div>-->
+                    <!--</td>-->
+                <!--</tr>-->
+                <!--&lt;!&ndash;<tr class="p-0 m-0">&ndash;&gt;-->
+                <!--&lt;!&ndash;&lt;!&ndash;INV Detail Items: invoiceNum, lineItemNum, poLineItemNum, serviceTypeId, desc, qty, fee&ndash;&gt;&ndash;&gt;-->
+                <!--&lt;!&ndash;<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="inDet.lineItemNum" disabled>&ndash;&gt;-->
+                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="inDet.desc"&ndash;&gt;-->
+                <!--&lt;!&ndash;(change)="onNewCellChange(i, 'desc', desc.value)" #desc></td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="feeTypes[inDet.feeTypeId - 1]"&ndash;&gt;-->
+                <!--&lt;!&ndash;disabled></td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="inDet.fee"&ndash;&gt;-->
+                <!--&lt;!&ndash;(change)="onNewCellChange(i, 'fee', fee.value); updateNewBillAmt();" #fee>&ndash;&gt;-->
+                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="inDet.qty"&ndash;&gt;-->
+                <!--&lt;!&ndash;(change)="onNewCellChange(i, 'qty', qty.value); updateNewBillAmt();" #qty>&ndash;&gt;-->
+                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                <!--&lt;!&ndash;<tr class="p-0 m-0">&ndash;&gt;-->
+                <!--&lt;!&ndash;<th class="align-content-center">&ndash;&gt;-->
+                <!--&lt;!&ndash;<p>{{getPerc(fee.value * qty.value, inDet.remainingQty)}}%</p>&ndash;&gt;-->
+                <!--&lt;!&ndash;</th>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td colspan="4">&ndash;&gt;-->
+                <!--&lt;!&ndash;<div class="progress" style="height: 25px;">&ndash;&gt;-->
+                <!--&lt;!&ndash;<div class="progress-bar bg-success" role="progressbar"&ndash;&gt;-->
+                <!--&lt;!&ndash;[ngStyle]="{'width': getPerc(fee.value * qty.value, inDet.remainingQty) + '%'}">&ndash;&gt;-->
+                <!--&lt;!&ndash;${{fee.value * qty.value}}&ndash;&gt;-->
+                <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                <!--&lt;!&ndash;<div class="progress-bar bg-danger" role="progressbar"&ndash;&gt;-->
+                <!--&lt;!&ndash;[ngStyle]="{'width': (100 - getPerc(fee.value * qty.value, inDet.remainingQty)) + '%'}">&ndash;&gt;-->
+                <!--&lt;!&ndash;${{inDet.remainingQty - (fee.value * qty.value)}}&ndash;&gt;-->
+                <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                <!--&lt;!&ndash;<tr class="p-0 m-0" *ngIf="inDet.poLineItemNum !== -1">&ndash;&gt;-->
+                <!--&lt;!&ndash;<th class="align-content-center">&ndash;&gt;-->
+                <!--&lt;!&ndash;<p>{{getPerc(qty.value, inDet.remainingQty)}}%</p>&ndash;&gt;-->
+                <!--&lt;!&ndash;</th>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td colspan="5">&ndash;&gt;-->
+                <!--&lt;!&ndash;<div class="progress" style="height: 25px;">&ndash;&gt;-->
+                <!--&lt;!&ndash;<div class="progress-bar bg-success" role="progressbar"&ndash;&gt;-->
+                <!--&lt;!&ndash;[ngStyle]="{'width': getPerc(qty.value, inDet.remainingQty) + '%'}">&ndash;&gt;-->
+                <!--&lt;!&ndash;Qty - {{(qty.value)}} / Amount - {{(qty.value * inDet.fee) | currency}}&ndash;&gt;-->
+                <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                <!--&lt;!&ndash;<div class="progress-bar bg-danger" role="progressbar"&ndash;&gt;-->
+                <!--&lt;!&ndash;[ngStyle]="{'width': (100 - getPerc(qty.value, inDet.remainingQty)) + '%'}">&ndash;&gt;-->
+                <!--&lt;!&ndash;Qty - {{(inDet.remainingQty - qty.value)}} / Amount - {{(inDet.remainingQty - qty.value)  * inDet.fee | currency}}&ndash;&gt;-->
+                <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                <!--</tbody>-->
+                <!--<tbody>-->
+                <!--&lt;!&ndash;<tr >&ndash;&gt;-->
+                <!--&lt;!&ndash;<td colspan="5" >&ndash;&gt;-->
+                <!--&lt;!&ndash;<p *ngIf="chosenInv.invoiceStatus == 1">&ndash;&gt;-->
+                <!--&lt;!&ndash;<select class="custom-select"&ndash;&gt;-->
+                <!--&lt;!&ndash;(change)="pushOntoSelectedDetail(inNumIn.value, newInDetails.length + 1, selectedPODetails[poDetSelec.value].lineItemNo,&ndash;&gt;-->
+                <!--&lt;!&ndash;selectedPODetails[poDetSelec.value].feeTypeId,&ndash;&gt;-->
+                <!--&lt;!&ndash;selectedPODetails[poDetSelec.value].serviceDesc, 0, selectedPODetails[poDetSelec.value].fee)"&ndash;&gt;-->
+                <!--&lt;!&ndash;[disabled]="!selectedPODetails.length && chosenInv.invoiceStatus !== 1"&ndash;&gt;-->
+                <!--&lt;!&ndash;#poDetSelec>&ndash;&gt;-->
+                <!--&lt;!&ndash;<option>Add new line item...</option>&ndash;&gt;-->
+                <!--&lt;!&ndash;<option *ngFor="let po of selectedPODetails; let i = index;" [value]="i">{{po.serviceDesc}}&ndash;&gt;-->
+                <!--&lt;!&ndash;</option>&ndash;&gt;-->
+                <!--&lt;!&ndash;<option [value]="-1">Out of Pocket Expenses</option>&ndash;&gt;-->
+                <!--&lt;!&ndash;</select>&ndash;&gt;-->
+                <!--&lt;!&ndash;</p>&ndash;&gt;-->
+                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                <!--</tbody>-->
+            <!--</table>-->
+            <!--<table class="table table-borderless table-sm">-->
+                <!--<tbody>-->
+                <!--<tr>-->
+                    <!--<td style="width: 40%" class="text-right"><b>Original Contract Amount</b></td>-->
+                    <!--<td style="width: 10%" class="text-right">-->
+                        <!--<div *ngIf="selectedPO">{{selectedPO.contractAmt | currency}}</div>-->
+                    <!--</td>-->
+                    <!--<td style="width: 30%" class="text-right">&nbsp;</td>-->
+                    <!--<td style="width: 20%" class="text-right">&nbsp;</td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<td class="text-right"><b>Net Changes by Change Orders</b></td>-->
+                    <!--<td class="text-right">-->
+                        <!--<div *ngIf="selectedPO">{{0 | currency}}</div>-->
+                    <!--</td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<td class="text-right"><b>Total Contract Amount</b></td>-->
+                    <!--<td class="text-right"><div *ngIf="selectedPO">{{selectedPO.contractAmt | currency}}</div></td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<td class="text-right"><b>Previously Billed</b></td>-->
+                    <!--<td class="text-right"><div *ngIf="selectedPO">{{selectedPO.previouslyBilledAmount | currency}}</div></td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                <!--</tr>-->
+                <!--&lt;!&ndash;<tr>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td class="text-right"><b>Amount This Invoice</b></td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td>{{newBillAmt}}</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td class="text-right">&nbsp;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td>&nbsp;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                <!--<tr>-->
+                    <!--<td class="text-right"><b>Balance to be Billed</b></td>-->
+                    <!--<td class="text-right"><div *ngIf="selectedPO">{{(selectedPO.contractAmt - selectedPO.previouslyBilledAmount - selectedBillAmt) | currency}}</div></td>-->
+                    <!--&lt;!&ndash;<td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<div class="input-group mb-3">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<div class="input-group-prepend">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<span class="input-group-text"><b>Total</b></span>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<span class="input-group-text">$</span>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<input type="number" class="form-control" [value]="newBillAmt" #billAmtIn disabled>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<div class="input-group-append">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<span class="input-group-text">.00</span>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                    <!--<td class="text-right"><b>Total due this invoice</b></td>-->
+                    <!--<td>{{selectedBillAmt | currency}}</td>-->
+                <!--</tr>-->
+                <!--</tbody>-->
+            <!--</table>-->
+            <!--&lt;!&ndash;<div class="input-group mb-3">&ndash;&gt;-->
+            <!--&lt;!&ndash;<div class="input-group-prepend">&ndash;&gt;-->
+            <!--&lt;!&ndash;<span class="input-group-text">Bill Amount*</span>&ndash;&gt;-->
+            <!--&lt;!&ndash;<span class="input-group-text">$</span>&ndash;&gt;-->
+            <!--&lt;!&ndash;</div>&ndash;&gt;-->
+            <!--&lt;!&ndash;<input type="number" class="form-control" [value]="selectedBillAmt" #billAmtIn>&ndash;&gt;-->
+            <!--&lt;!&ndash;<div class="input-group-append">&ndash;&gt;-->
+            <!--&lt;!&ndash;<span class="input-group-text">.00</span>&ndash;&gt;-->
+            <!--&lt;!&ndash;</div>&ndash;&gt;-->
+            <!--&lt;!&ndash;</div>&ndash;&gt;-->
+        <!--</div>-->
+
+        <!--Invoice Footer-->
+        <div class="modal-body" *ngIf="chosenInv">
+            <hr>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Special Notes*</span>
+                </div>
+                <textarea class="form-control" [value]="chosenInv.specialNotes" #notesIn [disabled]="chosenInv.invoiceStatus !== 1"></textarea>
+            </div>
+
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Certification*</span>
+                </div>
+                <textarea class="form-control" [value]="chosenInv.certification" #certIn [disabled]="chosenInv.invoiceStatus !== 1"></textarea>
+            </div>
+        </div>
+
+        <!--Select Invoice Message-->
+        <div class="modal-body" *ngIf="!chosenInv">
+            <p>Choose an Invoice First!</p>
+        </div>
+
+        <!--Modal Footer-->
+        <div class="modal-footer" >
+            <p *ngIf="chosenInv.invoiceStatus == 1">
+                <button type="button" class="btn btn-success"
+                        (click)="editInvoice(inNumIn.value, poNumIn.value, coNumIn.value,  pmtStatusIn.value, notesIn.value, certIn.value)">
+                    <!--[disabled]="(chosenInv.invoiceStatus !== 1)">-->
+                    Confirm
+                </button>
+            </p>
+            <p>
+                <button type="button" class="btn btn-danger" (click)="close(edit)">Cancel</button>
+            </p>
+        </div>
+    </app-modal-form>
+
+    <!--MODAL: new invoice-->
+    <app-modal-form [title]="'New Invoice'" #new>
+        <!--<form>-->
+        <!--General-->
+        <div class="modal-body">
+            <p class="h4 text-right">General</p>
+            <hr>
+            <table class="table table-borderless table-sm">
+                <tbody>
+                <tr>
+                    <td style="width: 1%">
+                        <span class="input-group-text">Customer</span>
+                    </td>
+                    <td>
+                        <select class="custom-select" (change)="customerDropdownChange(customerSelec.value)" #customerSelec>
+                            <option [value]="-1">Choose Customer...</option>
+                            <option *ngFor="let customer of customers; let i = index;" [value]="i">{{customer.customerName}}
+                            </option>
+                        </select>
+                    </td>
+                    <td style="width: 5%"></td>
+                    <td style="width: 10%">
+                        <span class="input-group-text">SO Number*</span>
+                    </td>
+                    <td>
+                        <select class="custom-select" (change)="poDropdownChange(poNumIn.value)"
+                                [disabled]="!correspondingPos.length" #poNumIn>
+                            <option>Choose Sales Order...</option>
+                            <option *ngFor="let po of correspondingPos;" [value]="po.ponum">{{po.ponum}}</option>
+                        </select>
+                    </td>
+                </tr>
+                <!--add1, add2, billToDept, city, customerId, customerName, email, fax, phone, state, zip, ziplast4-->
+                <tr>
+                    <td colspan="2">
+                        <p *ngIf="customerSelec.value >= 0" class="p-0 m-0 mt-2">
+                            {{customers[customerSelec.value].billToDept}}
+                        </p>
+                    </td>
+                    <td></td>
+                    <td>
+                        <span class="input-group-text">Invoice Number*</span>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" [value]="generatedInvoiceNumber" #inNumIn>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p *ngIf="customerSelec.value >= 0" class="p-0 m-0 mt-2">
+                            {{customers[customerSelec.value].add1}} {{customers[customerSelec.value].add2}}
+                        </p>
+                    </td>
+                    <td></td>
+                    <td>
+                        <span class="input-group-text">Change Order Num</span>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" #coNumIn>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p *ngIf="customerSelec.value >= 0" class="p-0 m-0 mt-2">
+                            {{customers[customerSelec.value].city}} {{customers[customerSelec.value].state}} {{customers[customerSelec.value].zip}}{{(customers[customerSelec.value].ziplast4 == 0) ? '':'-' + customers[customerSelec.value].ziplast4}}
+                        </p>
+                    </td>
+                    <td></td>
+                    <td>
+                        <span class="input-group-text">Payment Status*</span>
+                    </td>
+                    <td>
+                        <!--<input type="text" value="Outstanding" class="form-control" #pmtStatusIn disabled>-->
+
+                        <select class="custom-select" #pmtStatusIn disabled>
+                            <option value="1">Outstanding</option>
+                            <!--&lt;!&ndash;<option value=2>Paid</option>&ndash;&gt;-->
+                        </select>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!--Detail-->
+        <!--<div class="modal-body">-->
+            <!--<p class="h4 text-right">Detail</p>-->
+            <!--<table class="table">-->
+                <!--<thead>-->
+                <!--<tr>-->
+                    <!--<th scope="col" style="width: 30px"></th>-->
+                    <!--<th scope="col" style="width: 50px">#</th>-->
+                    <!--<th scope="col">Description</th>-->
+                    <!--<th scope="col" style="width: 150px">Rate Type</th>-->
+                    <!--<th scope="col" style="width: 100px">Rate</th>-->
+                    <!--<th scope="col" style="width: 100px">Quantity</th>-->
+                <!--</tr>-->
+                <!--</thead>-->
+                <!--&lt;!&ndash;<tbody>&ndash;&gt;-->
+                <!--<tbody *ngFor="let inDet of newInDetails; let i = index">-->
+                <!--<tr class="p-0 m-0">-->
+                    <!--&lt;!&ndash;INV Detail Items: invoiceNum, lineItemNum, poLineItemNum, serviceTypeId, desc, qty, fee&ndash;&gt;-->
+                    <!--<td class="p-0 m-0">-->
+                        <!--<button class="btn btn-outline-danger w-100" (click)="newInDetails.splice(0, 1)">-</button>-->
+                    <!--</td>-->
+                    <!--<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="inDet.lineItemNum" disabled>-->
+                    <!--</td>-->
+                    <!--<td class="p-0 m-0"><textarea style="height: 36px" class="form-control cell" [value]="inDet.desc"-->
+                                                  <!--(change)="onNewCellChange(i, 'desc', desc.value)" #desc></textarea>-->
+                        <!--&lt;!&ndash;<input type="text" class="form-control cell" [value]="inDet.desc"&ndash;&gt;-->
+                        <!--&lt;!&ndash;(change)="onNewCellChange(i, 'desc', desc.value)" #desc>&ndash;&gt;-->
+                    <!--</td>-->
+                    <!--<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="feeTypes[inDet.feeTypeId - 1]"-->
+                                               <!--disabled></td>-->
+                    <!--<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="inDet.fee | currency" #fee [disabled] = "poDetails[poDetSelec.value].lineItemNo!==-1"-->
+                                               <!--(change)="onNewCellChange(i, 'fee', fee.value.substr(1)); updateNewBillAmt();">-->
+                    <!--</td>-->
+                    <!--<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="inDet.qty"-->
+                                               <!--[step]="inDet.remainingQty / 100"-->
+                                               <!--(change)="onNewCellChange(i, 'qty', qty.value); updateNewBillAmt();" #qty>-->
+                    <!--</td>-->
+                <!--</tr>-->
+                <!--<tr class="p-0 m-0" *ngIf="inDet.poLineItemNum !== -1">-->
+                    <!--<th class="align-content-center">-->
+                        <!--<p>{{getPerc(qty.value, inDet.remainingQty)}}%</p>-->
+                    <!--</th>-->
+                    <!--<td colspan="5">-->
+                        <!--<div class="progress" style="height: 25px;">-->
+                            <!--<div class="progress-bar bg-success" role="progressbar"-->
+                                 <!--[ngStyle]="{'width': getPerc(qty.value, inDet.remainingQty) + '%'}">-->
+                                <!--Qty - {{(qty.value)}} / Amount - {{(qty.value * inDet.fee) | currency}}-->
+                            <!--</div>-->
+                            <!--<div class="progress-bar bg-danger" role="progressbar"-->
+                                 <!--[ngStyle]="{'width': (100 - getPerc(qty.value, inDet.remainingQty)) + '%'}">-->
+                                <!--Qty - {{(inDet.remainingQty - qty.value)}} / Amount - {{(inDet.remainingQty - qty.value)  * inDet.fee | currency}}-->
+                            <!--</div>-->
+                        <!--</div>-->
+                    <!--</td>-->
+                <!--</tr>-->
+                <!--<tr class="p-0 m-0" *ngIf="inDet.poLineItemNum == -1">-->
+                    <!--<th class="align-content-center">-->
+                        <!--<p>{{getPerc(qty.value, inDet.remainingQty)}}%</p>-->
+                    <!--</th>-->
+                <!--</tr>-->
+                <!--</tbody>-->
+                <!--<tbody>-->
+                <!--<tr>-->
+                    <!--<td colspan="6">-->
+                        <!--<select class="custom-select"-->
+                                <!--(change)="pushOntoNewDetail(inNumIn.value, newInDetails.length + 1, poDetails[poDetSelec.value].lineItemNo,-->
+                          <!--poDetails[poDetSelec.value].feeTypeId, poDetails[poDetSelec.value].serviceTypeId,-->
+                          <!--poDetails[poDetSelec.value].serviceDesc, 0, poDetails[poDetSelec.value].fee, poDetails[poDetSelec.value].remainingQty,-->
+                          <!--poNumIn.value)"-->
+                                <!--[disabled]="!poDetails.length"-->
+                                <!--#poDetSelec>-->
+                            <!--<option>Add line item...</option>-->
+                            <!--<option *ngFor="let po of poDetails; let i = index;" [value]="i">{{po.serviceDesc}}</option>-->
+                            <!--<option [value]="-1">Out of Pocket Expenses</option>-->
+                        <!--</select>-->
+                    <!--</td>-->
+                <!--</tr>-->
+
+                <!--&lt;!&ndash;<tr>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td colspan="6">&ndash;&gt;-->
+                <!--&lt;!&ndash;<select class="custom-select"&ndash;&gt;-->
+                <!--&lt;!&ndash;(change)="pushOntoNewDetail(inNumIn.value, newInDetails.length + 1, poDetails[poDetSelec.value].lineItemNo,&ndash;&gt;-->
+                <!--&lt;!&ndash;poDetails[poDetSelec.value].feeTypeId, poDetails[poDetSelec.value].serviceTypeId,&ndash;&gt;-->
+                <!--&lt;!&ndash;poDetails[poDetSelec.value].serviceDesc, 0, poDetails[poDetSelec.value].fee, poDetails[poDetSelec.value].remainingQty,&ndash;&gt;-->
+                <!--&lt;!&ndash;poNumIn.value)"&ndash;&gt;-->
+                <!--&lt;!&ndash;[disabled]="!poDetails.length"&ndash;&gt;-->
+                <!--&lt;!&ndash;#poDetSelec>&ndash;&gt;-->
+                <!--&lt;!&ndash;<option>Add line item...</option>&ndash;&gt;-->
+                <!--&lt;!&ndash;<option *ngFor="let po of poDetails; let i = index;" [value]="i">{{po.serviceDesc}}</option>&ndash;&gt;-->
+                <!--&lt;!&ndash;<option [value]="-1">Out of Pocket Expenses</option>&ndash;&gt;-->
+                <!--&lt;!&ndash;</select>&ndash;&gt;-->
+                <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                <!--</tbody>-->
+            <!--</table>-->
+
+            <!--<table class="table table-borderless table-sm">-->
+                <!--<tbody>-->
+                <!--<tr>-->
+                    <!--<td class="text-right" style="width: 40%" class="text-right"><b>Original Contract Amount</b></td>-->
+                    <!--<td class="text-right" style="width: 10%">-->
+                        <!--<div *ngIf="chosenPo">{{chosenPo.contractAmt | currency}}</div>-->
+                    <!--</td>-->
+                    <!--<td class="text-right" style="width: 30%" class="text-right">&nbsp;</td>-->
+                    <!--<td class="text-right" style="width: 20%" >&nbsp;</td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<td class="text-right"><b>Net Changes by Change Orders</b></td>-->
+                    <!--<td class="text-right"><div *ngIf="chosenPo">{{0  | currency}}</div></td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<td class="text-right"><b>Total Contract Amount</b></td>-->
+                    <!--<td class="text-right"><div *ngIf="chosenPo">{{chosenPo.contractAmt | currency}}</div></td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<td class="text-right"><b>Previously Billed</b></td>-->
+                    <!--<td class="text-right"><div *ngIf="chosenPo">{{chosenPo.previouslyBilledAmount | currency}}</div></td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                    <!--<td class="text-right">&nbsp;</td>-->
+                <!--</tr>-->
+                <!--&lt;!&ndash;<tr>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td class="text-right"><b>Amount This Invoice</b></td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td>{{newBillAmt}}</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td class="text-right">&nbsp;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;<td>&nbsp;</td>&ndash;&gt;-->
+                <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                <!--<tr>-->
+                    <!--<td class="text-right"><b>Balance to be Billed</b></td>-->
+                    <!--<td class="text-right"><div *ngIf="chosenPo">{{(chosenPo.contractAmt - chosenPo.previouslyBilledAmount - newBillAmt) | currency}}</div></td>-->
+                    <!--&lt;!&ndash;<td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<div class="input-group mb-3">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<div class="input-group-prepend">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<span class="input-group-text"><b>Total</b></span>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<span class="input-group-text">$</span>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<input type="number" class="form-control" [value]="newBillAmt" #billAmtIn disabled>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<div class="input-group-append">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<span class="input-group-text">.00</span>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                    <!--<td class="text-right"><b>Total due this invoice</b></td>-->
+                    <!--<td>{{newBillAmt | currency}}</td>-->
+                <!--</tr>-->
+                <!--</tbody>-->
+            <!--</table>-->
+        <!--</div>-->
+
+        <!--Invoice Footer-->
+        <div class="modal-body">
+            <hr>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Notes:</span>
+                </div>
+                <textarea class="form-control" #notesIn></textarea>
+            </div>
+
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Certification:</span>
+                </div>
+                <textarea class="form-control"
+                          [value]="'Certified that the above items and rates are in accordance with the contractual agreement as verified by the undersigned'"
+                          #certIn>
+                    </textarea>
+            </div>
+        </div>
+
+        <!--Modal Footer-->
+        <div class="modal-footer">
+            <button type="button" class="btn btn-success"
+                    (click)="addInvoice(inNumIn.value, poNumIn.value, coNumIn.value,  pmtStatusIn.value, 0, notesIn.value, certIn.value, 1, new)"
+                    [disabled]="!(inNumIn.value && poNumIn.value)">
+                    <!--[disabled]="!(inNumIn.value && poNumIn.value && newBillAmt && certIn.value)">-->
+                Confirm
+            </button>
+            <button type="reset" class="btn btn-danger" (click)="close(new)">Cancel</button>
+        </div>
+        <!--</form>-->
+    </app-modal-form>
+
+    <!--MODAL: invoice details-->
+    <app-modal-form [title]="'Invoice Details of ' + (chosenInv ? chosenInv.invoiceNumber: '')" #details>
+        <div class="modal-body">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12 align-items-end">
+                        <ag-grid-angular
+                                style="height: 350px;"
+                                class="ag-theme-balham"
+                                [enableColResize]="true"
+                                [enableSorting]="true"
+                                [enableFilter]="true"
+                                [rowData]="selectedInDetails | async"
+                                [columnDefs]="detailColumnDefs"
+                                [frameworkComponents]="frameworkComponents"
+                                (cellEditingStopped)="updateDetailRow($event)"
+                                (gridReady)="onDetailGridReady($event)"
+                                (rowDataChanged)="resizeColumns($event)"
+                                rowSelection="single"
+                        ></ag-grid-angular>
+                        <div class="input-group mt-2">
+                            <select class="custom-select"
+                                    [disabled]="!selectedPODetails.length || (chosenInv ? chosenInv.invoiceStatus === 2 || chosenInv.invoiceStatus === 3: false)"
+                                    #poDetailSelec>
+                                <option value="" disabled selected>Choose Sales Order...</option>
+                                <option *ngFor="let po of selectedPODetails" [value]="po.lineItemNo">{{po.serviceDesc}}</option>
+                                <hr>
+                                <option [value]="-1">Invoice Out of Pocket Expenses</option>
+                            </select>
+                            <div class="input-group-append w-25">
+                                <button class="btn btn-success w-50" type="button"
+                                        (click)="addEmptyDetail(poDetailSelec.value); poDetailSelec.selectedIndex = 0"
+                                        [disabled]="!poDetailSelec.value || (chosenInv ? chosenInv.invoiceStatus === 2 || chosenInv.invoiceStatus === 3: false)">
+                                    Add
+                                </button>
+                                <button class="btn btn-danger w-50 input-group-sm" type="button"
+                                        (click)="deleteInvDetail(); poDetailSelec.selectedIndex = 0"
+                                        [disabled]="(chosenInv ? chosenInv.invoiceStatus === 2 || chosenInv.invoiceStatus === 3: false)">
+                                    Delete
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h4 align="end">Contract Amount: {{selectedBillAmt | currency}}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--<div class="modal-footer">-->
+            <!--<button class="btn btn-outline-danger" (click)="close(details)">Exit</button>-->
+        <!--</div>-->
+    </app-modal-form>
+</div>
+
+<div *ngIf="!loggedIn">
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="jumbotron">
+                    <h1 class="display-4">Please Log In First!</h1>
+                    <p class="lead">Once you do, you will be able to create new invoices and edit existing ones to your hearts content!</p>
+                    <p class="lead">
+                        <a class="btn btn-success btn-lg" href="#" role="button">Log In</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

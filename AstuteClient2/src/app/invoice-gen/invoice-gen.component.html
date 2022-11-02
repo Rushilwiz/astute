@@ -1,0 +1,130 @@
+<app-nav-bar></app-nav-bar>
+<div class="page" #doc>
+  <div class="container-fluid">
+    <table>
+      <tr>
+        <td width="100%"><img src="assets/img/AstuteLogo.gif" align="left" alt="Astute Engineering" height="75"></td>
+        <td width="100%"><p class="h1 text-right align-bottom">INVOICE</p></td>
+      </tr>
+    </table>
+    <!--<div class="row">-->
+      <!--<div class="col-6">-->
+        <!--<img src="AstuteLogo.gif" align="left" alt="Astute Engineering" height="75">-->
+      <!--</div>-->
+      <!--<div class="col-6">-->
+        <!--<p class="h1 text-right align-bottom">INVOICE</p>-->
+      <!--</div>-->
+    <!--</div>-->
+    <br/>
+
+    <table>
+      <tr>
+        <td width="30%">
+          <p>To,</p>
+          <p>{{name}}</p>
+          <p>{{email}}</p>
+          <p>{{address}}</p>
+        </td>
+        <td class="text-right" width="40%">
+          <p>Purchase Order No.:</p>
+          <p>Contract No.:</p>
+          <p>Invoice No.:</p>
+          <p>Invoice Date:</p>
+        </td>
+        <td class="text-left" width="100%">
+          <p>{{poNum}}</p>
+          <p>{{coNum}}</p>
+          <p>{{inNum}}</p>
+          <p>{{inDate}}</p>
+        </td>
+      </tr>
+    </table>
+    <br/>
+    <table class="table table-sm table-bordered table-light">
+      <thead class="thead-light">
+      <tr>
+        <th scope="col" style="text-align: center;">No.</th>
+        <th scope="col" style="text-align: center;">Description</th>
+        <th scope="col" style="text-align: center;">Fee</th>
+        <th scope="col" style="text-align: center;">Quantity</th>
+        <th scope="col" style="text-align: center;">Amount</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let inDet of inDetails">
+        <th scope="row" style="text-align: center;">{{inDet.lineItemNum}}</th>
+        <td>{{inDet.desc}}</td>
+        <td style="text-align: right;">${{inDet.fee}}{{(inDet.feeTypeId == 2) ? ' /hr' : ''}}</td>
+        <td style="text-align: right;">{{inDet.qty}}</td>
+        <td style="text-align: right;">${{inDet.qty * inDet.fee}}.00</td>
+      </tr>
+      </tbody>
+    </table>
+    <br/>
+    <div class="row">
+      <table>
+        <tbody>
+        <tr style="height: 18px;">
+          <td style="width: 251.5px; text-align: right; height: 18px;">Original Contract Amount</td>
+          <td style="background-color: lightgray; border-color: black; width: 137.5px; height: 18px;">{{ogCoAmt}}</td>
+          <td style="width: 305px; text-align: right; height: 18px;">&nbsp;</td>
+          <td style="background-color: lightgray; border-color: black; width: 153px; height: 18px;">&nbsp;</td>
+        </tr>
+        <tr style="height: 17px;">
+          <td style="width: 251.5px; text-align: right; height: 17px;">Net Changes by Change Orders</td>
+          <td style="background-color: lightgray; border-color: black; width: 137.5px; height: 17px;">{{netChanges}}</td>
+          <td style="width: 305px; text-align: right; height: 18px;">&nbsp;</td>
+          <td style="background-color: lightgray; border-color: black; width: 153px; height: 18px;">&nbsp;</td>
+        </tr>
+        <tr style="height: 18px;">
+          <td style="width: 251.5px; text-align: right; height: 18px;">Total Contract Amount</td>
+          <td style="background-color: lightgray; border-color: black; width: 137.5px; height: 18px;">{{totCoAmt}}</td>
+          <td style="width: 305px; text-align: right; height: 18px;">&nbsp;</td>
+          <td style="background-color: lightgray; border-color: black; width: 153px; height: 18px;">&nbsp;</td>
+        </tr>
+        <tr style="height: 18px;">
+          <td style="width: 251.5px; text-align: right; height: 18px;">Previously Billed</td>
+          <td style="background-color: lightgray; border-color: black; width: 137.5px; height: 18px;">{{prevBill}}</td>
+          <td style="width: 305px; text-align: right; height: 18px;">&nbsp;</td>
+          <td style="background-color: lightgray; border-color: black; width: 153px; height: 18px;">&nbsp;</td>
+        </tr>
+        <tr style="height: 18px;">
+          <td style="width: 251.5px; text-align: right; height: 18px;">Balance to be Billed</td>
+          <td style="background-color: lightgray; border-color: black; width: 137.5px; height: 18px;">{{balToBeBill}}</td>
+          <td style="width: 305px; text-align: right; height: 18px;"><b>Total Due This Invoice</b></td>
+          <td style="background-color: lightgray; border-color: black; width: 153px; height: 18px;">{{finTot}}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <br/>
+    <div class="row">
+      <p>Notes:</p>
+      <ol>
+        {{notes}}
+      </ol>
+    </div>
+    <div class="row">
+      <p>{{cert}}</p>
+    </div>
+    <div class="row">
+      <div class="col-8"> </div>
+      <div class="col-4"><hr></div>
+    </div>
+  </div>
+</div>
+<div class="container-fluid skip">
+  <div class="row">
+    <div class="col">
+      <div class="text-center">
+        <button class="btn btn-lg btn-outline-primary" (click)="downloadPDF()">Download Image PDF</button>
+        <button class="btn btn-lg btn-outline-primary" (click)="testjsPDF()">Build PDF</button>
+        <button class="btn btn-lg btn-outline-primary" (click)="printGrid(null)">Print Grid</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<br/>
+<br/>
+<br/>

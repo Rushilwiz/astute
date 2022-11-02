@@ -1,0 +1,225 @@
+<app-nav-bar [invoicePaymentActive]="true"></app-nav-bar>
+<div *ngIf="loggedIn">
+  <h1 align="center">Invoice Payments</h1>
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <ag-grid-angular
+                #agGrid
+                style="height: 500px;"
+                class="ag-theme-balham"
+                [enableSorting]="true"
+                [enableFilter]="true"
+                [rowData]="rowData"
+                [columnDefs]="columnDefs"
+                rowSelection="single"
+        ></ag-grid-angular>
+      </div>
+    </div>
+    <div class="row justify-content-center mt-2">
+      <div class="col-6">
+        <button class="btn btn-success" style="width: 100%" (click)="open(new)">Add Invoice Payment</button>
+      </div>
+      <div class="col-6">
+        <button class="btn btn-info" style="width: 100%" (click)="open(edit)">Edit Invoice payment</button>
+      </div>
+    </div>
+  </div>
+
+  <!--MODAL: new Invoice Payment-->
+  <app-modal-form [title]="'New Invoice Payment'" #new>
+    <form>
+      <div class="modal-body">
+        <table class="table table-borderless table-sm">
+          <tbody>
+          <tr>
+            <td>
+              <span class="input-group-text">Invoice Number*</span>
+            </td>
+            <td>
+              <select class="custom-select" (change)="invoiceDropdownChange(invoiceSelect.value)"
+                      #invoiceSelect>
+                <!--[value]="chosenInv.invoiceNumber"-->
+                <option [value]="-1">Choose Invoice...</option>
+                <option *ngFor="let invoice of invoices; let i = index;" [value]="i">{{invoice.invoiceNumber}}
+                </option>
+              </select>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Payment Received*</span>
+            </td>
+            <td class="p-0 m-0" colspan="7">
+              <input type="text" class="form-control cell" [value]="0 | currency" #inPaymentReceived>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Payment Type*</span>
+            </td>
+            <td>
+              <select class="custom-select" (change)="paymentTypeDropdownChange(paymentTypeSelect.value)"
+                      #paymentTypeSelect>
+
+                <option selected>Choose...</option>
+                <option *ngFor="let paymentType of paymentTypes;  let i = index;" [value]="i">{{paymentType.paymentTypeName}}</option>
+              </select>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Payment Date*</span>
+            </td>
+            <td colspan="7">
+              <input type="date" class="form-control" #inDateReceived>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Check#</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" #incheckNo>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Transaction#</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" #inTransactionNo>
+            </td>
+          </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-success" type="button"
+                [disabled]="!(chosenInv && inPaymentReceived.value && chosenPaymentType && inDateReceived.value)"
+                (click)="addInvoicePayment(chosenInv, null, chosenPaymentType, inDateReceived.value, inPaymentReceived.value.replace('$', '').replace(',', ''), incheckNo.value, inTransactionNo.value, new)">
+          <!--(click)="addInvoicePayment(chosenInv, null, chosenPaymentType, null, inDateReceived.value, inPaymentReceived.value, new)">-->
+          Add
+        </button>
+        <!--<input type="reset" (click)="close(new)">Cancel-->
+        <button type="reset" class="btn btn-danger" (click)="close(new)">Cancel</button>
+      </div>
+    </form>
+  </app-modal-form>
+
+  <!--MODAL: edit invoice payment-->
+  <app-modal-form [title]="'Editing'" #edit>
+    <div *ngIf="selected">
+      <div class="modal-body">
+        <table class="table table-borderless table-sm">
+          <tbody>
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Invoice Number**</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" #invoiceSelect [value]="selected.invoiceNum">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Payment Received*</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" #inPaymentReceived [value]="selected.invoiceAmount">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Payment Type*</span>
+            </td>
+            <td>
+              <input type="text" class="form-control" #paymentTypeSelect [value]="paymentTypes[selected.paymentTypeId-1].paymentTypeName">
+              <!--<select class="custom-select" [value]={{paymentTypes[selected.paymentTypeId-1].paymentTypeName}} (change)="paymentTypeDropdownChange(paymentTypeSelect.value)"-->
+              <!--#paymentTypeSelect>-->
+
+              <!--<option *ngFor="let paymentType of paymentTypes;  let i = index;" [value]="i">{{paymentType.paymentTypeName}}-->
+              <!--&lt;!&ndash;{{paymentTypes[selected.paymentTypeId-1].paymentTypeName}}}&ndash;&gt;-->
+              <!--</option>-->
+              <!--</select>-->
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Date Received*</span>
+            </td>
+            <td colspan="7">
+              <input type="date" class="form-control" #inDateReceived [value]="selected.paymentDate">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Check#</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" #incheckNo [value]="selected.checkNo">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="width: 10%">
+              <span class="input-group-text">Transaction#</span>
+            </td>
+            <td colspan="7">
+              <input type="text" class="form-control" #intransactionNo [value]="selected.transactionNo">
+            </td>
+          </tr>
+
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-warning" type="button"
+                [disabled]="!(invoiceSelect.value && inPaymentReceived.value && inDateReceived.value)"
+                (click)="updateInvoicePayment(invoiceSelect.value, selected.invoicePaymentId, selected.paymentTypeId, inDateReceived.value, inPaymentReceived.value.substr(1).replace(',', ''), incheckNo.value, intransactionNo.value, edit)">
+          Update
+        </button>
+        <button type="button" class="btn btn-danger" (click)="close(edit)">Cancel</button>
+      </div>
+    </div>
+    <div *ngIf="!selected">
+      <div class="modal-body">
+        Choose an Invoice Payment First!
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-warning" type="button"
+                [disabled]="true">
+          Update
+        </button>
+        <button type="button" class="btn btn-danger" (click)="close(edit)">Cancel</button>
+      </div>
+    </div>
+  </app-modal-form>
+</div>
+
+<div *ngIf="!loggedIn">
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-12">
+        <div class="jumbotron">
+          <h1 class="display-4">Please Log In First!</h1>
+          <p class="lead">Once you do, you will be able to log payments to your hearts content!</p>
+          <p class="lead">
+            <a class="btn btn-success btn-lg" href="#" role="button">Log In</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

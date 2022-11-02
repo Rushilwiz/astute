@@ -1,0 +1,26 @@
+.cell {
+  height: 100%;
+  width: 100%;
+  background-color: white;
+  border-radius: 0px;
+  border-width: 0px;
+  /*margin: 0px;*/
+  /*padding: 0;*/
+  /*overflow-x: auto;*/
+}
+
+.cell:focus {
+  outline: none;
+}
+
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+  color: lightblue;
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+  color: lightblue;
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+  color: lightblue;
+}

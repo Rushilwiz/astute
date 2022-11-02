@@ -1,0 +1,15 @@
+.box {
+  height: 130px;
+  width: 348px;
+  cursor: pointer;
+
+  transition: 200ms ease;
+}
+
+.box:hover {
+  box-shadow: 3px 3px 10px lightgrey;
+
+  transform: translateX(-3px) translateY(-3px);
+
+  transition: 300ms ease;
+}

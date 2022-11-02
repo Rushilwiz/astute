@@ -1,0 +1,474 @@
+<app-nav-bar [salesOrderActive]="true"></app-nav-bar>
+<div *ngIf="loggedIn">
+  <h1 align="center">Sales Orders</h1>
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <ag-grid-angular
+                style="height: 500px;"
+                class="ag-theme-balham"
+                [gridOptions]="gridOptions"
+                [enableColResize]="true"
+                [enableSorting]="true"
+                [enableFilter]="true"
+                [rowData]="rowData | async"
+                [columnDefs]="columnDefs"
+                [frameworkComponents]="frameworkComponents"
+                (cellEditingStopped)="updateRow($event)"
+                (gridReady)="onGridReady($event)"
+                (rowClicked)="setSelectedRow($event)"
+                (rowDataChanged)="resizeColumns($event)"
+                rowSelection="single"
+        ></ag-grid-angular>
+      </div>
+    </div>
+    <div class="row justify-content-center mt-2">
+      <div class="col">
+        <div class="btn-group w-100">
+          <button class="btn btn-success" style="width: 100%" (click)="open(new)">Add</button>
+          <button class="btn btn-info" style="width: 100%" (click)="open(edit)" [disabled]="!selected || selected.isFinal">Edit</button>
+          <button class="btn btn-secondary" style="width: 100%" (click)="open(editDetails)" [disabled]="!selected">Details</button>
+          <button class="btn btn-primary" style="width: 100%" (click)="finalizePO(selected.ponum)" [disabled]="!selected || selected.isFinal">Finalize</button>
+          <button class="btn btn-danger" style="width: 100%" (click)="deletePO(selected.ponum)" [disabled]="!selected || selected.invoiceSequence > 0">Delete</button>
+        </div>
+      </div>
+      <!--<div class="col">-->
+        <!--<button class="btn btn-info" style="width: 100%" (click)="open(edit)">Edit</button>-->
+      <!--</div>-->
+      <!--<div class="col">-->
+        <!--<button class="btn btn-secondary" style="width: 100%" (click)="open(editDetails)" [disabled]="!selected">Details</button>-->
+      <!--</div>-->
+      <!--<div class="col">-->
+        <!--<button class="btn btn-primary" style="width: 100%" (click)="finalizePO(selected.ponum)" [disabled]="!selected?true:selected.final === 1">Finalize</button>-->
+      <!--</div>-->
+      <!--<div class="col">-->
+        <!--<button class="btn btn-danger" style="width: 100%" (click)="deletePO(selected.ponum)" [disabled]="!selected?true:selected.final === 0">Delete</button>-->
+      <!--</div>-->
+    </div>
+  </div>
+
+  <!--MODAL: new po-->
+  <app-modal-form [title]="'New Sales Order'" #new>
+    <div class="modal-body">
+      <p class="h4 text-right">General</p>
+      <hr>
+      <table class="table table-borderless table-sm">
+        <tbody>
+        <tr>
+          <td><span class="input-group-text">Astute Proj. No.</span></td>
+          <td colspan="3"><input type="text" class="form-control" placeholder="Internal Project Number" #projNum></td>
+        </tr>
+        <tr>
+          <td><span class="input-group-text">Customer</span></td>
+          <td colspan="3">
+            <select class="form-control" #customerid>
+              <option [value]="-1">Choose Customer...</option>
+              <option *ngFor="let customer of customers" [value]="customer.customerId">{{customer.customerName}}</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="input-group-text">SO Title</span></td>
+          <td colspan="3"><input type="text" class="form-control" placeholder="Distinctive title, will be used to identify later" #title></td>
+        </tr>
+        <tr>
+          <td style="width: 20%"><span class="input-group-text">SO Number</span></td>
+          <td style="width: 30%"><input type="text" class="form-control" placeholder="Internal SO Number" maxlength="40" #ponum></td>
+          <td style="width: 20%"><span class="input-group-text">SO Date</span></td>
+          <td style="width: 30%"><input type="date" class="form-control" [value]="getCurrDate()" #podate></td>
+        </tr>
+        <tr>
+          <td style="width: 20%"><span class="input-group-text">Contract Number</span></td>
+          <td style="width: 30%"><input type="text" class="form-control" placeholder="External Contract Number" #contractnum></td>
+          <td style="width: 20%"><span class="input-group-text">Contract Amount</span></td>
+          <td style="width: 30%"><input type="text" class="form-control" placeholder="Derived From Details" [value]="0 | currency" #contractamt disabled></td>
+        </tr>
+        <tr>
+          <td><span class="input-group-text">Notes</span></td>
+          <td colspan="3"><input type="text" class="form-control" placeholder="Notes..." #notes></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!--Detail-->
+    <!--<div class="modal-body">-->
+    <!--<p class="h4 text-right">Detail</p>-->
+    <!--<hr>-->
+    <!--<table class="table">-->
+    <!--<thead>-->
+    <!--<tr>-->
+    <!--<th scope="col"></th>-->
+    <!--<th scope="col" style="width: 50px">#</th>-->
+    <!--<th scope="col">Description</th>-->
+    <!--<th scope="col">Rate Type</th>-->
+    <!--<th scope="col">Service Type</th>-->
+    <!--<th scope="col" style="width: 75px">Qty(#)</th>-->
+    <!--<th scope="col" style="width: 100px">Rate($)</th>-->
+    <!--</tr>-->
+    <!--</thead>-->
+
+    <!--<tbody *ngFor="let poDetail of newPODetail; let i = index">-->
+    <!--<tr class="p-0 m-0">-->
+    <!--<td class="p-1 m-0">-->
+    <!--<button class="btn btn-outline-danger" type="button" (click)="newPODetail.splice(i, 1);">-->
+    <!-- - -->
+    <!--</button>-->
+    <!--</td>-->
+    <!--<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="poDetail.lineItemNo" (change)="onNewCellChange(i, 'lineItemNo', lineItemNo.value)" #lineItemNo></td>-->
+    <!--<td class="p-0 m-0">-->
+    <!--<textarea style="height: 36px" class="form-control cell" [value]="poDetail.serviceDesc" (change)="onNewCellChange(i, 'serviceDesc', serviceDesc.value)" #serviceDesc></textarea>-->
+    <!--&lt;!&ndash;<input type="text" class="form-control cell" [value]="poDetail.serviceDesc" (change)="onNewCellChange(i, 'serviceDesc', serviceDesc.value)" #serviceDesc>&ndash;&gt;-->
+    <!--</td>-->
+    <!--<td class="p-0 m-0">-->
+    <!--<select class="form-control cell" [value]="poDetail.feeTypeId" (change)="onNewCellChange(i, 'feeTypeId', feeTypeId.value)" #feeTypeId>-->
+    <!--<option value="1">Fixed Fee</option>-->
+    <!--<option value="2">Hourly</option>-->
+    <!--</select>-->
+    <!--</td>-->
+    <!--<td class="p-0 m-0">-->
+    <!--<select class="form-control cell" [value]="poDetail.serviceTypeId" (change)="onNewCellChange(i, 'serviceTypeId', serviceTypeId.value)" #serviceTypeId>-->
+    <!--<option value="1">Study</option>-->
+    <!--<option value="2">Design</option>-->
+    <!--<option value="3">Peer Review</option>-->
+    <!--<option value="4">Cost Estimation</option>-->
+    <!--<option value="5">Forensic Investigation</option>-->
+    <!--</select>-->
+    <!--</td>-->
+    <!--<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="+poDetail.qty" (change)="onNewCellChange(i, 'qty', qty.value); onNewCellChange(i, 'remainingQty', qty.value * fee.value); updateNewContractAmt();" #qty></td>-->
+    <!--<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="+poDetail.fee" (change)="onNewCellChange(i, 'fee', fee.value); onNewCellChange(i, 'remainingQty', qty.value * fee.value); updateNewContractAmt();" #fee></td>-->
+    <!--&lt;!&ndash;<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="poDetail.remainingQty" [id]="'remainingQty' + i"></td>&ndash;&gt;-->
+    <!--</tr>-->
+    <!--</tbody>-->
+    <!--<tr class="p-0 m-0">-->
+    <!--<td class="p-1 m-0">-->
+    <!--<button class="btn btn-success" type="button"-->
+    <!--[disabled]="!ponum.value"-->
+    <!--(click)="pushOntoNewDetail(newPODetail.length + 1, ponum.value, '', '1', '1', 1, 0, 0)">-->
+    <!--&lt;!&ndash;(click)="pushOntoNewDetail((lineItemNo) ? lineItemNo.value + 1: 1, ponum.value, serviceDesc.value,&ndash;&gt;-->
+    <!--&lt;!&ndash;feeTypeId.value, serviceTypeId.value, qty.value, fee.value, 0)">&ndash;&gt;-->
+    <!--+</button>-->
+    <!--</td>-->
+    <!--&lt;!&ndash;<td class="p-0 m-0">&ndash;&gt;-->
+    <!--&lt;!&ndash;<input type="number" class="form-control cell" [value]="(selectedPODetail.length) ? selectedPODetail[selectedPODetail.length-1].lineItemNo + 1: 1" #lineItemNo>&ndash;&gt;-->
+    <!--&lt;!&ndash;</td>&ndash;&gt;-->
+    <!--&lt;!&ndash;<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="''" #serviceDesc></td>&ndash;&gt;-->
+    <!--&lt;!&ndash;<td class="p-0 m-0">&ndash;&gt;-->
+    <!--&lt;!&ndash;<select class="form-control cell" [value]="1" #feeTypeId>&ndash;&gt;-->
+    <!--&lt;!&ndash;<option value="1">Fixed Fee</option>&ndash;&gt;-->
+    <!--&lt;!&ndash;<option value="2">Hourly</option>&ndash;&gt;-->
+    <!--&lt;!&ndash;</select>&ndash;&gt;-->
+    <!--&lt;!&ndash;</td>&ndash;&gt;-->
+    <!--&lt;!&ndash;<td class="p-0 m-0">&ndash;&gt;-->
+    <!--&lt;!&ndash;<select class="form-control cell" [value]="1" #serviceTypeId>&ndash;&gt;-->
+    <!--&lt;!&ndash;<option value="1">Study</option>&ndash;&gt;-->
+    <!--&lt;!&ndash;<option value="2">Design</option>&ndash;&gt;-->
+    <!--&lt;!&ndash;<option value="3">Peer Review</option>&ndash;&gt;-->
+    <!--&lt;!&ndash;<option value="4">Cost Estimation</option>&ndash;&gt;-->
+    <!--&lt;!&ndash;<option value="5">Forensic Investigation</option>&ndash;&gt;-->
+    <!--&lt;!&ndash;</select>&ndash;&gt;-->
+    <!--&lt;!&ndash;</td>&ndash;&gt;-->
+    <!--&lt;!&ndash;<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="1" #qty></td>&ndash;&gt;-->
+    <!--&lt;!&ndash;<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="0" #fee></td>&ndash;&gt;-->
+    <!--&lt;!&ndash;&lt;!&ndash;<td class="p-0 m-0"><input type="number" class="form-control cell" #remainingQty></td>&ndash;&gt;&ndash;&gt;-->
+    <!--</tr>-->
+    <!--</tbody>-->
+    <!--</table>-->
+    <!--</div>-->
+
+    <div class="modal-footer">
+      <button class="btn btn-success" type="button"
+              [disabled]="!(ponum.value && podate.value && customerid.value && contractnum.value && contractamt.value && projNum.value)"
+              (click)="addPo(projNum.value, ponum.value, podate.value, customerid.value, contractnum.value, contractamt.value.replace('$', '').replace(',', ''), title.value, notes.value, new)"
+      >
+        Add
+      </button>
+      <button class="btn btn-outline-danger" (click)="close(new)">Cancel</button>
+    </div>
+  </app-modal-form>
+
+  <!--MODAL: edit po-->
+  <app-modal-form [title]="'Edit Sales Order'" #edit>
+    <div *ngIf="selected">
+      <div class="modal-body">
+        <p class="h4 text-right">General</p>
+        <hr>
+        <table class="table table-borderless table-sm">
+          <tbody>
+          <tr>
+            <td><span class="input-group-text">Astute Proj. No.</span></td>
+            <td colspan="3"><input type="text" class="form-control" placeholder="Project Number" [value]="selected.astuteProjectNumber" #projNum></td>
+          </tr>
+          <tr>
+            <td><span class="input-group-text">Customer</span></td>
+            <td colspan="3">
+              <select class="form-control" [value]="selected.customerId" disabled="true" #customerid>
+                <option [value]="-1">No Customer</option>
+                <option *ngFor="let customer of customers" [value]="customer.customerId">{{customer.customerName}}</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="input-group-text">SO Title</span></td>
+            <td colspan="3"><input type="text" class="form-control" placeholder="SO Title" [value]="selected.title" #title></td>
+          </tr>
+          <tr>
+            <td style="width: 20%"><span class="input-group-text">SO Number</span></td>
+            <td style="width: 30%"><input type="text" class="form-control" placeholder="SO Number" maxlength="40" [value]="selected.ponum" #ponum disabled></td>
+            <td style="width: 20%"><span class="input-group-text">SO Date</span></td>
+            <td style="width: 30%"><input type="date" class="form-control" [value]="selected.podate" #podate></td>
+          </tr>
+          <tr>
+            <td style="width: 20%"><span class="input-group-text">Contract Number</span></td>
+            <td style="width: 30%"><input type="text" class="form-control" placeholder="Contract Number" [value]="selected.contractNum" #contractnum></td>
+            <td style="width: 20%"><span class="input-group-text">Contract Amount</span></td>
+            <td style="width: 30%"><input type="text" class="form-control" placeholder="Contract Amount" [value]="selected.contractAmtString" #contractamt disabled></td>
+          </tr>
+          <tr>
+            <td><span class="input-group-text">Notes</span></td>
+            <td colspan="3"><input type="text" class="form-control" placeholder="Notes..." [value]="selected.notes" #notes></td>
+          </tr>
+          </tbody>
+        </table>
+        <!--<form>-->
+        <!--<div class="form-group row">-->
+        <!--<label class="col-sm-2 col-form-label">Astute Project Number</label>-->
+        <!--<div class="col-sm-10">-->
+        <!--<input type="text" class="form-control" placeholder="Project Number" [value]="selected.astuteProjectNumber" #projNum>-->
+        <!--</div>-->
+        <!--</div>-->
+        <!--<div class="form-group row">-->
+        <!--<label class="col-sm-2 col-form-label">Customer Name</label>-->
+        <!--<div class="col-sm-10">-->
+        <!--<select class="form-control" [value]="selected.customerId" #customerid disabled>-->
+        <!--<option *ngFor="let customer of customers" [value]="customer.customerId">{{customer.customerName}}-->
+        <!--</option>-->
+        <!--</select>-->
+        <!--</div>-->
+        <!--</div>-->
+        <!--<div class="form-group row">-->
+        <!--<label class="col-sm-2 col-form-label">SO Title</label>-->
+        <!--<div class="col-sm-10">-->
+        <!--<input type="text" class="form-control" [value]="selected.title" #title>-->
+        <!--</div>-->
+        <!--</div>-->
+        <!--<div class="form-group row">-->
+        <!--<label class="col-sm-2 col-form-label">SO Number</label>-->
+        <!--<div class="col-sm-10">-->
+        <!--<input type="text" class="form-control" placeholder="SO Number" [value]="selected.ponum" #ponum disabled>-->
+        <!--</div>-->
+        <!--</div>-->
+        <!--<div class="form-group row">-->
+        <!--<label class="col-sm-2 col-form-label">SO Date</label>-->
+        <!--<div class="col-sm-10">-->
+        <!--<input type="date" class="form-control" [value]="selected.podate" #podate>-->
+        <!--</div>-->
+        <!--</div>-->
+        <!--<div class="form-group row">-->
+        <!--<label class="col-sm-2 col-form-label">Contract Number</label>-->
+        <!--<div class="col-sm-10">-->
+        <!--<input type="text" class="form-control" placeholder="Contract Number" [value]="selected.contractNum"-->
+        <!--#contractnum>-->
+        <!--</div>-->
+        <!--</div>-->
+        <!--<div class="form-group row">-->
+        <!--<label class="col-sm-2 col-form-label">Contract Amount</label>-->
+        <!--<div class="col-sm-10">-->
+        <!--<input type="text" class="form-control" placeholder="Contract Amount" [value]="selected.contractAmt"-->
+        <!--#contractamt>-->
+        <!--</div>-->
+        <!--</div>-->
+        <!--</form>-->
+      </div>
+
+
+      <!--fee-->
+      <!--feeTypeId-->
+      <!--lineItemNo-->
+      <!--ponum-->
+      <!--qty-->
+      <!--remainingQty-->
+      <!--serviceDesc-->
+      <!--serviceTypeId-->
+
+      <!--Detail-->
+      <!--<div class="modal-body" *ngIf="selectedPODetail">-->
+      <!--<p class="h4 text-right">Detail</p>-->
+      <!--<hr>-->
+
+      <!--<table class="table">-->
+      <!--<thead>-->
+      <!--<tr>-->
+      <!--<th scope="col" style="width: 50px">#</th>-->
+      <!--&lt;!&ndash;<th scope="col">Purchase Order Number</th>&ndash;&gt;-->
+      <!--<th scope="col">Description</th>-->
+      <!--<th scope="col">Rate Type</th>-->
+      <!--<th scope="col">Service Type</th>-->
+      <!--<th scope="col" style="width: 75px">Quantity</th>-->
+      <!--<th scope="col" style="width: 100px">Rate</th>-->
+      <!--&lt;!&ndash;<th scope="col">Remaining Quantity</th>&ndash;&gt;-->
+      <!--</tr>-->
+      <!--</thead>-->
+      <!--&lt;!&ndash;<tbody>&ndash;&gt;-->
+      <!--<tbody *ngFor="let poDetail of selectedPODetail; let i = index">-->
+      <!--<tr class="p-0 m-0">-->
+      <!--&lt;!&ndash;<td class="p-0 m-0">&ndash;&gt;-->
+      <!--&lt;!&ndash;<button class="btn btn-outline-danger" type="button" (click)="selectedPODetail.splice(i, 1);">&ndash;&gt;-->
+      <!--&lt;!&ndash; - &ndash;&gt;-->
+      <!--&lt;!&ndash;</button>&ndash;&gt;-->
+      <!--&lt;!&ndash;</td>&ndash;&gt;-->
+      <!--<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="poDetail.lineItemNo" (change)="onSelectedCellChange(i, 'lineItemNo', lineItemNo.value)" #lineItemNo></td>-->
+      <!--&lt;!&ndash;<td class="p-0"><input type="text" class="form-control cell" [value]="poDetail.ponum"></td>&ndash;&gt;-->
+      <!--<td class="p-0 m-0">-->
+      <!--<textarea style="height: 36px" class="form-control cell" [value]="poDetail.serviceDesc" (change)="onSelectedCellChange(i, 'serviceDesc', serviceDesc.value)" #serviceDesc></textarea>-->
+      <!--&lt;!&ndash;<input type="text" class="form-control cell" [value]="poDetail.serviceDesc" (change)="onSelectedCellChange(i, 'serviceDesc', serviceDesc.value)" #serviceDesc>&ndash;&gt;-->
+      <!--</td>-->
+      <!--<td class="p-0 m-0">-->
+      <!--<select class="form-control cell" [value]="poDetail.feeTypeId" (change)="onSelectedCellChange(i, 'feeTypeId', feeTypeId.value)" #feeTypeId>-->
+      <!--<option value="1">Fixed Fee</option>-->
+      <!--<option value="2">Hourly</option>-->
+      <!--</select>-->
+      <!--&lt;!&ndash;<input type="number" class="form-control cell" [value]="poDetail.feeTypeId">&ndash;&gt;-->
+      <!--</td>-->
+      <!--<td class="p-0 m-0">-->
+      <!--<select class="form-control cell" [value]="poDetail.serviceTypeId" (change)="onSelectedCellChange(i, 'serviceTypeId', serviceTypeId.value)" #serviceTypeId>-->
+      <!--<option [value]="serviceType.serviceTypeId" *ngFor="let serviceType of serviceNames">{{serviceType.desc}}</option>-->
+      <!--&lt;!&ndash;<option value="">Study</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="2">Design</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="3">Peer Review</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="4">Cost Estimation</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="5">Forensic Investigation</option>&ndash;&gt;-->
+      <!--</select>-->
+      <!--&lt;!&ndash;<input type="number" class="form-control cell" [value]="poDetail.serviceTypeId" #serviceTypeId>&ndash;&gt;-->
+      <!--</td>-->
+      <!--<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="+poDetail.qty" (change)="onSelectedCellChange(i, 'qty', qty.value); onSelectedCellChange(i, 'remainingQty', qty.value * fee.value); updateEditContractAmt();" #qty></td>-->
+      <!--<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="+poDetail.fee | currency" (change)="onSelectedCellChange(i, 'fee', fee.value); onSelectedCellChange(i, 'remainingQty', qty.value * fee.value); updateEditContractAmt();" #fee></td>-->
+      <!--&lt;!&ndash;<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="poDetail.remainingQty" [id]="'remainingQty' + i"></td>&ndash;&gt;-->
+      <!--</tr>-->
+      <!--</tbody>-->
+      <!--<tr class="p-0 m-0">-->
+      <!--<td class="p-1 m-0">-->
+      <!--<button class="btn btn-success" type="button"-->
+      <!--(click)="pushOntoSelectedDetail(selectedPODetail.length + 1, ponum.value, '', '1', '1', 1, 0, 0)">-->
+      <!--&lt;!&ndash;(click)="pushOntoSelectedDetail(selectedPODetail[selectedPODetail.length-1].lineItemNo + 1, selected.ponum, serviceDesc.value,&ndash;&gt;-->
+      <!--&lt;!&ndash;feeTypeId.value, serviceTypeId.value, qty.value, fee.value, 0)">&ndash;&gt;-->
+      <!--+</button>-->
+      <!--</td>-->
+      <!--&lt;!&ndash;<td class="p-0 m-0"><input type="text" class="form-control cell" [value]="''" #serviceDesc></td>&ndash;&gt;-->
+      <!--&lt;!&ndash;<td class="p-0 m-0">&ndash;&gt;-->
+      <!--&lt;!&ndash;<select class="form-control cell" [value]="1" #feeTypeId>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="1">Fixed Fee</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="2">Hourly</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;</select>&ndash;&gt;-->
+      <!--&lt;!&ndash;</td>&ndash;&gt;-->
+      <!--&lt;!&ndash;<td class="p-0 m-0">&ndash;&gt;-->
+      <!--&lt;!&ndash;<select class="form-control cell" [value]="1" #serviceTypeId>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="1">Study</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="2">Design</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="3">Peer Review</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="4">Cost Estimation</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;<option value="5">Forensic Investigation</option>&ndash;&gt;-->
+      <!--&lt;!&ndash;</select>&ndash;&gt;-->
+      <!--&lt;!&ndash;</td>&ndash;&gt;-->
+      <!--&lt;!&ndash;<td class="p-0 m-0"><input type="number" class="form-control cell" [value]="0" #qty></td>&ndash;&gt;-->
+      <!--&lt;!&ndash;<td class="p-0 m-0"><input type="number" class="form-control cell" #remainingQty></td>&ndash;&gt;-->
+      <!--</tr>-->
+      <!--</tbody>-->
+      <!--</table>-->
+      <!--</div>-->
+
+      <div class="modal-footer">
+        <button class="btn btn-success" type="button"
+                [disabled]="!(ponum.value && podate.value && contractnum.value && contractamt.value && projNum.value)"
+                (click)="editPo(projNum.value, ponum.value, podate.value, contractnum.value, contractamt.value.replace(',', '').replace('$', ''), title.value, notes.value, edit)"
+        >
+          Update
+        </button>
+        <button class="btn btn-outline-danger" (click)="close(edit)">Cancel</button>
+      </div>
+    </div>
+    <div *ngIf="!selected">
+      <div class="modal-body">
+        Choose a Sales Order First!
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-success" type="button"
+                [disabled]="true"
+        >
+          Update
+        </button>
+        <button class="btn btn-outline-danger" (click)="close(edit)">Cancel</button>
+      </div>
+    </div>
+  </app-modal-form>
+
+  <!--MODAL: po details-->
+  <app-modal-form [title]="'Details of ' + (selected ? selected.ponum: '')" #editDetails>
+    <div class="modal-body">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-12 align-items-end">
+            <ag-grid-angular
+                    style="height: 350px;"
+                    class="ag-theme-balham"
+                    [enableColResize]="true"
+                    [enableSorting]="true"
+                    [enableFilter]="true"
+                    [rowData]="selectedPODetail | async"
+                    [columnDefs]="detailColumnDefs"
+                    [frameworkComponents]="frameworkComponents"
+                    (cellEditingStopped)="updateDetailRow($event)"
+                    (gridReady)="onDetailGridReady($event)"
+                    (rowDataChanged)="resizeColumns($event)"
+                    rowSelection="single"
+            ></ag-grid-angular>
+          </div>
+        </div>
+        <div class="row justify-content-center mt-2">
+          <div class="col">
+            <div class="input-group mb-3 mt-2">
+              <input type="text" class="form-control input-group-sm" placeholder="Descrpition"
+                     [disabled]="selected ? selected.isFinal : false" #poDescription>
+              <div class="input-group-append w-25">
+                <button class="btn btn-success w-50 input-group-sm" type="button"
+                        (click)="addEmptyDetail(poDescription.value); poDescription.value = '';"
+                        [disabled]="!poDescription.value || (selected ? selected.isFinal : false)">
+                  Add
+                </button>
+                <button class="btn btn-danger w-50 input-group-sm" type="button"
+                        (click)="deletePODetail()"
+                        [disabled]="(selected ? selected.isFinal : false)">
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-12 justify-content-start">
+            <h4 align="end">Contract Amount: {{contractAmount | currency}}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </app-modal-form>
+</div>
+
+<div *ngIf="!loggedIn">
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-12">
+        <div class="jumbotron">
+          <h1 class="display-4">Please Log In First!</h1>
+          <p class="lead">Once you do, you will be able to create new sales orders and edit existing ones to your hearts content!</p>
+          <p class="lead">
+            <a class="btn btn-success btn-lg" href="#" role="button">Log In</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

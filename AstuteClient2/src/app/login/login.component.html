@@ -1,0 +1,28 @@
+<div class="page" style="width: 35%; margin: 20px auto auto;">
+  <form class="form-signin" (ngSubmit)="login(f)" #f="ngForm" style="margin-bottom: 10px">
+    <div class="row">
+      <div class="col-12">
+      <img src="assets/img/AstuteLogo.png" height="100" width="230">
+      <h1 class="form-signin-heading text-right">Login</h1>
+      </div>
+    </div>
+
+    <label for="username" class="sr-only">Username</label>
+    <input class="form-control"
+           type="text"
+           id="username"
+           name="username"
+           ngModel
+           placeholder="Username">
+
+    <label for="password" class="sr-only">Password</label>
+    <input class="form-control"
+           type="password"
+           id="password"
+           name="password"
+           ngModel
+           placeholder="Password">
+
+    <button class="btn btn-primary" type="submit" style="float: right">Log in</button>
+  </form>
+</div>
